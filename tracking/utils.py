@@ -5,13 +5,12 @@ import numpy as np
 import cv2
 
 # ------------------------------------------------------------
-# Functions for sampling, homogeneous
+# Functions for sampling, homogeneous coordinates
 # ------------------------------------------------------------
 
 def sample_region(img, corners, region_shape=None,
                   method=0, interpolation=cv2.INTER_LINEAR):
-    """
-    Sample corners region as Bird-eye view patch. Left top point of the 
+    """Sample corners region as Bird-eye view patch. Left top point of the 
     rect corners is defined as the origin coordinate (0, 0).
     Args:
         img: image to be sampled
@@ -20,7 +19,7 @@ def sample_region(img, corners, region_shape=None,
         method: 0, cv2.RANSAC or other options here.
         interpolation: interpolation for perspective transformation.
     Returns:
-        region: sampled img region.
+        region: sampled bird-eye view img region.
     """
     if region_shape is None:
         # Top-left, Top-right, Bottom-right, Bottom-left coordinates
@@ -51,3 +50,85 @@ def sample_region(img, corners, region_shape=None,
     region = cv2.warpPerspective(img, M, (width, height), flags=interpolation)
 
     return region
+
+def homogenize(corners):
+    """Transform points (n, m) into their homogeneous coordinate 
+    form of (n+1, m).
+    """
+    (h, w) = corners.shape
+    results = np.empty((h+1, w))
+    results[:h] = corners
+    results[-1].fill(1)
+    return results
+
+def dehomogenize(corners):
+    """Transform and denormalize points (n+1, m) into their cartesian 
+    coordinate form (n, m).
+    """
+    (h, w) = corners.shape
+    results = np.empty((h-1,w))
+    results[:h-1] = corners[:h-1] / corners[h-1]
+    return results
+
+# ------------------------------------------------------------
+# Functions for homography motion generation and Inverse 
+# Compositional updates
+# From Martin's NN paper.
+# ------------------------------------------------------------
+
+_SQUARE = np.array([[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]]).T
+_SQUARE_AFF = np.array([[-.5,-.5],[.5,-.5],[-.5,.5]]).T
+
+def compute_homography(in_pts, out_pts):
+    """Normalized Direct Linear Transformation to compute homography.
+    """
+    num_pts = in_pts.shape[1]
+    constraint_matrix = np.empty((num_pts*2, 9), dtype=np.float64)
+    for i in range(num_pts):
+        r1 = 2*i
+        constraint_matrix[r1,0] = 0
+        constraint_matrix[r1,1] = 0
+        constraint_matrix[r1,2] = 0
+        constraint_matrix[r1,3] = -in_pts[0,i]
+        constraint_matrix[r1,4] = -in_pts[1,i]
+        constraint_matrix[r1,5] = -1
+        constraint_matrix[r1,6] = out_pts[1,i] * in_pts[0,i]
+        constraint_matrix[r1,7] = out_pts[1,i] * in_pts[1,i]
+        constraint_matrix[r1,8] = out_pts[1,i]
+
+        r2 = 2*i + 1
+        constraint_matrix[r2,0] = in_pts[0,i]
+        constraint_matrix[r2,1] = in_pts[1,i]
+        constraint_matrix[r2,2] = 1
+        constraint_matrix[r2,3] = 0
+        constraint_matrix[r2,4] = 0
+        constraint_matrix[r2,5] = 0
+        constraint_matrix[r2,6] = -out_pts[0,i] * in_pts[0,i]
+        constraint_matrix[r2,7] = -out_pts[0,i] * in_pts[1,i]
+        constraint_matrix[r2,8] = -out_pts[0,i]
+    U,S,V = np.linalg.svd(constraint_matrix)
+    H = V[8].reshape(3,3) / V[8][8]
+    return H
+
+def apply_homography(homography, pts):
+    (h, w) = pts.shape    
+    result = np.empty((h+1, w))
+    result[:h] = pts
+    result[h].fill(1)
+    result = np.asmatrix(homography) * result
+    result[:h] = result[:h] / result[h]
+    result[np.isnan(result)] = 0
+    return np.asarray(result[:h])
+
+def square_to_corners_warp(corners):
+    """Computes the homography from the centered unit square to
+       the quadrilateral defined by the corners.
+    """
+    return compute_homography(_SQUARE, corners)
+
+def random_homography(sigma_t, sigma_d):
+    """Generate a random homography motion.
+    """
+    disturbed = np.random.normal(0, sigma_d, (2, 4)) + np.random.normal(0, sigma_t, (2, 1)) + _SQUARE
+    H = compute_homography(_SQUARE, disturbed)
+    return H
