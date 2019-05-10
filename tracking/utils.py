@@ -120,6 +120,9 @@ def apply_homography(homography, pts):
     result[np.isnan(result)] = 0
     return np.asarray(result[:h])
 
+def normalize_hom(homography):
+    return homography / homography[2, 2]
+
 def square_to_corners_warp(corners):
     """Computes the homography from the centered unit square to
        the quadrilateral defined by the corners.

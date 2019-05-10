@@ -4,13 +4,6 @@ import sys
 import numpy as np
 import cv2
 
-# Root directory of the project
-ROOT_DIR = os.path.abspath("../")
-
-# Import tracking utils
-sys.path.append(ROOT_DIR)  # To find local version of the library
-from tracking import utils
-
 def draw_region(img, corners, color=(0, 255, 0), thickness=2):
     """
     Draw the bounding box specified by the given corners
