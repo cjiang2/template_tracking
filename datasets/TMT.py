@@ -4,8 +4,7 @@ import sys
 import numpy as np
 
 def read_tracking_data(filename):
-    """
-    Read ground truth data in MTF format.
+    """Read ground truth data in MTF format.
     """
     if not os.path.isfile(filename):
         print("Tracking data file not found:\n ", filename)
