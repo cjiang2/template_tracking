@@ -1,3 +1,8 @@
+"""
+Tracking Python
+Code for visualization.
+"""
+
 import os
 import sys
 

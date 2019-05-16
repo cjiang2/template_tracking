@@ -1,3 +1,8 @@
+"""
+Tracking Python
+Utils code enabling various functionalities.
+"""
+
 import os
 import sys
 
