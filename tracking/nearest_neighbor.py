@@ -1,6 +1,10 @@
 """
-Nearest Neighbor tracker
+Nearest Neighbor Tracker
 The main implementation for Nearest Neighbor registration-based tracker.
+
+# References:
+http://www.roboticsproceedings.org/rss09/p44.pdf
+https://github.com/abhineet123/PTF/tree/master
 """
 
 import os
@@ -45,30 +49,42 @@ class NNTracker():
     def _synthesis(self):
         """Generate synthetic search patches and updates.
         """
+        def get_patch(frame, warp, H, patch_shape):
+            """Get one synthetic search patch by input homography warp.
+            """
+            disturbed_warp = np.matmul(self.warp, np.linalg.inv(H))   # Inverse composition, one step
+
+            # Get search corners and search patch
+            search_corners = np.round(utils.apply_homography(disturbed_warp, utils._SQUARE)).astype(int)
+            search_patch = utils.sample_region(self.init_frame, search_corners, self.patch_shape)
+            return np.float32(search_patch)
+
         print('[Running] Generating synthetic dataset...')
         self.X, self.Y = [], [] # search patches and warps
         for motion_param in self.motion_params:
             for _ in range(self.Np):
                 # Random homography motion
                 sigma_d, sigma_t = motion_param
-                H = utils.random_homography(sigma_d, sigma_t) 
-                disturbed_warp = np.matmul(self.warp, np.linalg.inv(H))   # Inverse composition, one step
+                H = utils.random_homography(sigma_d, sigma_t)
 
-                # Get search corners and search patch
-                search_corners = np.round(utils.apply_homography(disturbed_warp, utils._SQUARE)).astype(int)
-                search_patch = utils.sample_region(self.init_frame, search_corners, self.patch_shape)
-                search_patch = np.float32(search_patch)
-                search_patch = (search_patch - search_patch.mean()) / search_patch.std()
+                # Get search patch
+                search_patch = get_patch(self.init_frame, self.warp, H, self.patch_shape)
+                search_patch = (search_patch - search_patch.mean()) / search_patch.std()    # 0-1 normalization
 
                 self.X.append(search_patch.reshape(-1))
                 self.Y.append(H)
                 #print('generated corners:', search_corners)
 
-        self.X, self.Y = np.array(self.X), np.array(self.Y)
+        # Add an identity warp
+        H = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        search_patch = get_patch(self.init_frame, self.warp, H, self.patch_shape)
+        search_patch = (search_patch - search_patch.mean()) / search_patch.std()
 
-        # Random shuffle
-        #shuffle_indices = np.random.permutation(np.arange(len(self.patches)))
-        #self.patches, self.motions = self.patches[shuffle_indices], self.motions[shuffle_indices]
+        self.X.append(search_patch.reshape(-1))
+        self.Y.append(H)
+
+        # Synthetic dataset
+        self.X, self.Y = np.array(self.X), np.array(self.Y)
         print('[OK] Synthesis done.')
         print('Synthetic dataset:', self.X.shape, self.Y.shape)
 
