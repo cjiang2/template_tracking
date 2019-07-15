@@ -30,6 +30,9 @@ class NNTracker():
         self.Np = Np
         self.motion_params = motion_params
         self.debug = debug
+        if self.debug:
+            self.trajectories = []  # Option to store all updating warp trajectories
+            self.all_corners = []   # Option to store all corners produced during tracking, including iterations
 
     def initialize(self, frame, corners):
         """Initialize registration tracker with tracked corners.
@@ -38,7 +41,9 @@ class NNTracker():
         self.warp = utils.square_to_corners_warp(corners)     # Current warp
 
         if self.debug:
-            template = utils.sample_region(frame, corners, self.patch_shape)
+            self.trajectories.append([self.warp])   # Store initial warp
+            self.all_corners.append([corners])      # Store initial corners
+            template = utils.sample_region(frame, corners, self.patch_shape)    # Visualization test
             plt.imshow(template, cmap='gray')
             plt.title('template')
             plt.show()
@@ -97,6 +102,10 @@ class NNTracker():
         if not self.initialized:
             raise Exception('Tracker uninitialized!')
         
+        if self.debug:
+            temp_corners = []
+            temp_trajectories = []
+
         for i in range(self.max_iter):
             # Acquire current patch
             current_corners = np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int)
@@ -113,5 +122,14 @@ class NNTracker():
             update_warp = self.Y[idx]
             self.warp = np.matmul(self.warp, update_warp)
             self.warp = utils.normalize_hom(self.warp)
+
+            if self.debug:
+                temp_corners.append(np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int))
+                temp_trajectories.append(update_warp)
+
+        if self.debug:
+            # Store corners and trajectories generated during iteration
+            self.all_corners.append(temp_corners)
+            self.trajectories.append(temp_trajectories)
 
         return np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int)
