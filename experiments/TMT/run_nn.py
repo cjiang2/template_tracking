@@ -15,53 +15,27 @@ from tracking.visualize import draw_region
 from tracking.config import Config
 from datasets.TMT import read_tracking_data
 
-def alignment_error(corners_pred, corners_true):
+def alignment_error(corners_pred, 
+                    corners_true):
     """Calculate Alignment Error (l2) error between corners.
     """
-    return np.sqrt(np.mean(np.square(corners_pred - corners_true)))
+    return np.sqrt(np.mean(np.sum((corners_pred - corners_true)**2, axis=0)))
 
-def read_TMT(video_name):
+def read_TMT(folder_name, 
+             video_name):
     """Read TMT video information.
     """
-    src_fname = os.path.join(ROOT_DIR, 'datasets', 'TMT', video_name, 'frame%05d.jpg')
+    src_fname = os.path.join(ROOT_DIR, 'datasets', folder_name, video_name, 'frame%05d.jpg')
     cap = cv2.VideoCapture()
     if not cap.open(src_fname):
         raise Exception('The video file ', src_fname, ' could not be opened')
 
-    ground_truths = read_tracking_data(os.path.join(ROOT_DIR, 'datasets', 'TMT', video_name+'.txt'))
+    ground_truths = read_tracking_data(os.path.join(ROOT_DIR, 'datasets', folder_name, video_name+'.txt'))
     return cap, ground_truths
 
-def visualize_iteration(config, 
-                        tracker, 
-                        idx, 
-                        frame_1):
-    # 221-222
-    """Visualize corners generated during a single tracking
-    iteration path planning in one continuous frame update.
-    NOTE: debug option must be on! 
-    Args:
-        config: configuration class.
-        tracker: any tracker class.
-        idx: frame no index to be visualize.
-        frame_1: next 'idx + 1' consecutive frame.
-    """
-    if config.DEBUG != True:
-        raise Exception('Debug option must be on! ')
-
-    # Get corners and trajectories from the specified idx
-    temp_corners, trajectories = tracker.all_corners[idx], tracker.trajectories[idx]
-    init_corners = tracker.all_corners[idx-1][-1]
-
-    # Visualization
-    vis = draw_region(frame_1, init_corners)
-    for corners in temp_corners:
-        vis = draw_region(vis, corners)
-    
-    cv2.imwrite('vis.jpg', vis)
-
-    return
-
-def run_nn_tracker(config, cap, ground_truths):
+def run_nn_tracker(config, 
+                   cap, 
+                   ground_truths):
     """Helper function to run nn tracker.
     """
     # Prepare 1st frame
@@ -72,8 +46,7 @@ def run_nn_tracker(config, cap, ground_truths):
         print(corners0, corners0.shape)
 
     # Initialize nearest neighbor tracker
-    nntracker = NNTracker(max_iter=config.MAX_ITER,
-                          Np=config.NUM_SYNTHESIS)
+    nntracker = NNTracker()
     nntracker.initialize(frame0, corners0)
 
     # Visualization
@@ -99,12 +72,6 @@ def run_nn_tracker(config, cap, ground_truths):
         frame = draw_region(frame, corners, color=(0, 0, 255))
         cv2.imshow(window_name, frame)
 
-        if i == 168:
-            visualize_iteration(config, 
-                            nntracker, 
-                            i, 
-                            frame)
-
         if cv2.waitKey(20) & 0xFF == ord('q'):
             break
 
@@ -125,9 +92,10 @@ class NNConfig(Config):
 
 if __name__ == '__main__':
     # Parameters
-    video_name = 'nl_cereal_s5'
+    folder_name = 'LinTrack'
+    video_name = 'phone'
     nn_config = NNConfig()
 
     # Experiment
-    cap, ground_truths = read_TMT(video_name)
+    cap, ground_truths = read_TMT(folder_name, video_name)
     run_nn_tracker(nn_config, cap, ground_truths)
