@@ -33,11 +33,16 @@ class HyperplaneTracker():
             motion_params: sigma_d and sigma_t for motion generation.
         """
         self.patch_shape = patch_shape
-        self.max_iter = max_iter
         self.N = N
         self.motion_params = motion_params
+        self.max_iter = max_iter
         self.lambd = lambd
+
+        # Debugging option
         self.debug = debug
+        if self.debug:
+            self._trajectories = []  # Option to store all updating warp trajectories
+            self._all_corners = []   # Option to store all corners produced during tracking, including iterations
 
     def initialize(self, 
                    frame, 
@@ -52,6 +57,8 @@ class HyperplaneTracker():
         self.template = utils.normalize_minmax(self.template)
 
         if self.debug:
+            self._trajectories.append([self.warp])   # Store initial warp
+            self._all_corners.append([corners])      # Store initial corners
             template = utils.sample_region(frame, corners, self.patch_shape)    # Visualization test
             plt.imshow(template, cmap='gray')
             plt.title('template')
@@ -63,14 +70,17 @@ class HyperplaneTracker():
     def _synthesis(self):
         """Generate synthetic search patches and updates.
         """
-        def get_patch(frame, warp, H, patch_shape):
+        def get_patch(frame, 
+                      warp, 
+                      H, 
+                      patch_shape):
             """Get one synthetic search patch by input homography warp.
             """
-            disturbed_warp = np.matmul(self.warp, np.linalg.inv(H))   # Inverse composition, one step
+            disturbed_warp = np.matmul(warp, np.linalg.inv(H))   # Inverse warp
 
             # Get search corners and search patch
             search_corners = np.round(utils.apply_homography(disturbed_warp, utils._SQUARE)).astype(int)
-            search_patch = utils.sample_region(self.init_frame, search_corners, self.patch_shape)
+            search_patch = utils.sample_region(init_frame, search_corners, patch_shape)
             return np.float32(search_patch)
 
         print('[Running] Generating synthetic dataset...')
@@ -125,6 +135,10 @@ class HyperplaneTracker():
         if not self.initialized:
             raise Exception('Tracker uninitialized!')
 
+        if self.debug:
+            temp_corners = []
+            temp_trajectories = []
+
         for _ in range(self.max_iter):
             # Acquire current patch
             current_corners = np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int)
@@ -166,5 +180,15 @@ class HyperplaneTracker():
             # Update
             self.warp = np.matmul(self.warp, update_warp)
             self.warp = utils.normalize_hom(self.warp)
+
+            # Debugging option: store current trajectory and corners
+            if self.debug:
+                temp_corners.append(np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int))
+                temp_trajectories.append(update_warp)
+
+        if self.debug:
+            # Store corners and trajectories generated during iteration
+            self._all_corners.append(temp_corners)
+            self._trajectories.append(temp_trajectories)
 
         return np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int)

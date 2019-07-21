@@ -99,7 +99,8 @@ def dehomogenize(corners):
 _SQUARE = np.array([[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]]).T
 _SQUARE_AFF = np.array([[-.5,-.5],[.5,-.5],[-.5,.5]]).T
 
-def compute_homography(in_pts, out_pts):
+def compute_homography(in_pts, 
+                       out_pts):
     """Normalized Direct Linear Transformation to compute homography.
     """
     num_pts = in_pts.shape[1]
@@ -130,7 +131,8 @@ def compute_homography(in_pts, out_pts):
     H = V[8].reshape(3,3) / V[8][8]
     return H
 
-def apply_homography(homography, pts):
+def apply_homography(homography, 
+                     pts):
     (h, w) = pts.shape    
     result = np.empty((h+1, w))
     result[:h] = pts
@@ -149,7 +151,8 @@ def square_to_corners_warp(corners):
     """
     return compute_homography(_SQUARE, corners)
 
-def random_homography(sigma_t, sigma_d):
+def random_homography(sigma_t, 
+                      sigma_d):
     """Generate a random homography motion.
     """
     disturbed = np.random.normal(0, sigma_d, (2, 4)) + np.random.normal(0, sigma_t, (2, 1)) + _SQUARE

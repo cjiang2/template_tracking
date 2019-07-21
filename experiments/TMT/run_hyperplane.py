@@ -15,12 +15,14 @@ from tracking.visualize import draw_region
 from tracking.config import Config
 from datasets.TMT import read_tracking_data
 
-def alignment_error(corners_pred, corners_true):
+def alignment_error(corners_pred, 
+                    corners_true):
     """Calculate Alignment Error (l2) error between corners.
     """
     return np.sqrt(np.mean(np.sum((corners_pred - corners_true)**2, axis=0)))
 
-def read_TMT(folder_name, video_name):
+def read_TMT(folder_name, 
+             video_name):
     """Read TMT video information.
     """
     src_fname = os.path.join(ROOT_DIR, 'datasets', folder_name, video_name, 'frame%05d.jpg')
@@ -31,7 +33,9 @@ def read_TMT(folder_name, video_name):
     ground_truths = read_tracking_data(os.path.join(ROOT_DIR, 'datasets', folder_name, video_name+'.txt'))
     return cap, ground_truths
 
-def run_hyperplane_tracker(config, cap, ground_truths):
+def run_hyperplane_tracker(config, 
+                           cap, 
+                           ground_truths):
     """Helper function to run hyperplane tracker.
     """
     # Prepare 1st frame
