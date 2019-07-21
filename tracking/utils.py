@@ -13,8 +13,11 @@ import cv2
 # Functions for sampling, homogeneous coordinates
 # ------------------------------------------------------------
 
-def sample_region(img, corners, region_shape=None,
-                  method=0, interpolation=cv2.INTER_LINEAR):
+def sample_region(img, 
+                  corners, 
+                  region_shape=None,
+                  method=0, 
+                  interpolation=cv2.INTER_NEAREST):
     """Sample corners region as Bird-eye view patch. Left top point of the 
     rect corners is defined as the origin coordinate (0, 0).
     Args:
@@ -52,9 +55,21 @@ def sample_region(img, corners, region_shape=None,
 
     # Birds-eye-view for the patch image based on corners
     M, _ = cv2.findHomography(src, dst, method)   # OpenCV accepts (4, 2) only
-    region = cv2.warpPerspective(img, M, (width, height), flags=interpolation)
+    region = cv2.warpPerspective(img, 
+                                 M, 
+                                 (width, height), 
+                                 flags=interpolation, 
+                                 borderMode=cv2.BORDER_REPLICATE)
+                                 #borderMode=cv2.BORDER_CONSTANT,
+                                 #borderValue=0)
 
     return region
+
+def corners_to_mask(img,
+                    corners):
+    mask = np.zeros(img.shape[:2], dtype=np.uint8)
+    cv2.fillPoly(mask, [corners.T], 255)    
+    return mask
 
 def homogenize(corners):
     """Transform points (n, m) into their homogeneous coordinate 
@@ -140,3 +155,15 @@ def random_homography(sigma_t, sigma_d):
     disturbed = np.random.normal(0, sigma_d, (2, 4)) + np.random.normal(0, sigma_t, (2, 1)) + _SQUARE
     H = compute_homography(_SQUARE, disturbed)
     return H
+
+def normalize_zscore(intensity):
+    """zero mean, unit variance normalization.
+    """
+    intensity = (intensity - np.mean(intensity)) / np.std(intensity, ddof=1)
+    return intensity
+
+def normalize_minmax(intensity):
+    """Min-max normalization.
+    """
+    intensity = (intensity - np.min(intensity)) / (np.max(intensity) - np.min(intensity))
+    return intensity
