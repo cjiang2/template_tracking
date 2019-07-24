@@ -3,9 +3,6 @@ Tracking Python
 Code for visualization.
 """
 
-import os
-import sys
-
 import numpy as np
 import cv2
 

@@ -3,9 +3,6 @@ Tracking Python
 Utils code enabling various functionalities.
 """
 
-import os
-import sys
-
 import numpy as np
 import cv2
 
@@ -65,10 +62,12 @@ def sample_region(img,
 
     return region
 
-def corners_to_mask(img,
-                    corners):
+def polys_to_mask(img,
+                  polys):
+    """Convert list shape (n, 2) of polygon points to a binary mask.
+    """
     mask = np.zeros(img.shape[:2], dtype=np.uint8)
-    cv2.fillPoly(mask, [corners.T], 255)    
+    cv2.fillPoly(mask, [polys], 255)
     return mask
 
 def homogenize(corners):
@@ -133,6 +132,8 @@ def compute_homography(in_pts,
 
 def apply_homography(homography, 
                      pts):
+    """Apply homography on point set of shape (2, n).
+    """
     (h, w) = pts.shape    
     result = np.empty((h+1, w))
     result[:h] = pts
@@ -143,6 +144,8 @@ def apply_homography(homography,
     return np.asarray(result[:h])
 
 def normalize_hom(homography):
+    """Normalize homography matrix.
+    """
     return homography / homography[2, 2]
 
 def square_to_corners_warp(corners):
@@ -158,6 +161,10 @@ def random_homography(sigma_t,
     disturbed = np.random.normal(0, sigma_d, (2, 4)) + np.random.normal(0, sigma_t, (2, 1)) + _SQUARE
     H = compute_homography(_SQUARE, disturbed)
     return H
+
+# ------------------------------------------------------------
+# Functions for image operation.
+# ------------------------------------------------------------
 
 def normalize_zscore(intensity):
     """zero mean, unit variance normalization.

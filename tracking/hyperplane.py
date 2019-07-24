@@ -3,6 +3,9 @@ Hyperplane Tracker
 The main implementation for Hyperplane tracker.
 
 # References:
+https://pdfs.semanticscholar.org/f06d/3fc49dca2e6380969b3d8f377b33c6001e7a.pdf
+https://pdfs.semanticscholar.org/7fbc/4c4f01eb9716959ffef8b4a620a3d1c38577.pdf
+http://www.roboticsproceedings.org/rss09/p44.pdf
 """
 
 import os
@@ -31,6 +34,9 @@ class HyperplaneTracker():
             patch_shape: shape of bird-eye view patch.
             N: No. synthetic data to be generated.
             motion_params: sigma_d and sigma_t for motion generation.
+            max_iter: maximum search iteration for tracker update process.
+            lambd: regularization strength for linear learner.
+            debug: debug mode.
         """
         self.patch_shape = patch_shape
         self.N = N
@@ -52,6 +58,7 @@ class HyperplaneTracker():
         self.init_frame = frame
         self.warp = utils.square_to_corners_warp(corners)     # Current warp
 
+        # Sample template patch
         self.template = utils.sample_region(frame, corners, self.patch_shape)
         self.template = np.float32(self.template)
         self.template = utils.normalize_minmax(self.template)
@@ -68,19 +75,20 @@ class HyperplaneTracker():
         self.initialized = self._synthesis()
 
     def _synthesis(self):
-        """Generate synthetic search patches and updates.
+        """Generate synthetic search patches and updates 
+        with inverse composition.
         """
         def get_patch(frame, 
                       warp, 
                       H, 
                       patch_shape):
-            """Get one synthetic search patch by input homography warp.
+            """Get one synthetic search patch by inputting homography warp parameter.
             """
             disturbed_warp = np.matmul(warp, np.linalg.inv(H))   # Inverse warp
 
             # Get search corners and search patch
             search_corners = np.round(utils.apply_homography(disturbed_warp, utils._SQUARE)).astype(int)
-            search_patch = utils.sample_region(init_frame, search_corners, patch_shape)
+            search_patch = utils.sample_region(frame, search_corners, patch_shape)
             return np.float32(search_patch)
 
         print('[Running] Generating synthetic dataset...')
@@ -120,7 +128,7 @@ class HyperplaneTracker():
         return True
 
     def train(self):
-        """Use an Scipy linear regression instead.
+        """Linear regression. Use an Scipy linear regression instead.
         """
         self.learners = []
         # Calculate weight matrix per motion param
@@ -149,8 +157,7 @@ class HyperplaneTracker():
             # Linear regression
             deltaI = np.expand_dims((current_patch - self.template).reshape(-1), axis=0)
 
-            # Greedy search
-            #TODO: can do a beamsearch here
+            # Greedy search, use the update with the maximum similarity score
             scores = []
             candidates = []
             for learner in self.learners:

@@ -18,7 +18,7 @@ from tracking import utils
 
 class NNTracker():
     def __init__(self, 
-                 patch_shape=(50, 50), 
+                 patch_shape=(30, 30), 
                  max_iter=10, 
                  N=500, 
                  motion_params=[(0.12, 0.08),
@@ -26,6 +26,7 @@ class NNTracker():
                                 (0.06, 0.04), 
                                 (0.03, 0.02), 
                                 (0.015, 0.01)], 
+                 distance_type='euclidean',
                  debug=False):
         """Parameter settings.
         Args:
@@ -37,6 +38,7 @@ class NNTracker():
         self.max_iter = max_iter
         self.N = N
         self.motion_params = motion_params
+        self.distance_type = distance_type
 
         # Debugging option
         self.debug = debug
@@ -109,7 +111,7 @@ class NNTracker():
 
         # pyflann initialization
         print('Building pyflann indexing...')
-        pyflann.set_distance_type('manhattan')
+        pyflann.set_distance_type(self.distance_type)
         self.flann = pyflann.FLANN()
         self.flann.build_index(self.X, algorithm='kdtree', trees=6, checks=50)
         print('[OK] done.')
