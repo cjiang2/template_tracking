@@ -13,25 +13,13 @@ sys.path.append(ROOT_DIR)  # To find local version of the library
 from tracking.nearest_neighbor import NNTracker
 from tracking.visualize import draw_region
 from tracking.config import Config
-from datasets.TMT import read_tracking_data
+from datasets.MTF import read_tracking_data, read_imgs_folders
 
 def alignment_error(corners_pred, 
                     corners_true):
     """Calculate Alignment Error (l2) error between corners.
     """
     return np.sqrt(np.mean(np.sum((corners_pred - corners_true)**2, axis=0)))
-
-def read_TMT(folder_name, 
-             video_name):
-    """Read TMT video information.
-    """
-    src_fname = os.path.join(ROOT_DIR, 'datasets', folder_name, video_name, 'frame%05d.jpg')
-    cap = cv2.VideoCapture()
-    if not cap.open(src_fname):
-        raise Exception('The video file ', src_fname, ' could not be opened')
-
-    ground_truths = read_tracking_data(os.path.join(ROOT_DIR, 'datasets', folder_name, video_name+'.txt'))
-    return cap, ground_truths
 
 def run_nn_tracker(config, 
                    cap, 
@@ -46,7 +34,10 @@ def run_nn_tracker(config,
         print(corners0, corners0.shape)
 
     # Initialize nearest neighbor tracker
-    nntracker = NNTracker()
+    nntracker = NNTracker(patch_shape=config.PATCH_SHAPE,
+                          N=config.NUM_SYNTHESIS,
+                          max_iter=config.MAX_ITER,
+                          debug=config.DEBUG)
     nntracker.initialize(frame0, corners0)
 
     # Visualization
@@ -86,16 +77,16 @@ class NNConfig(Config):
     """Configuration for nearest neighbor tracker.
     """
     NAME = 'NNTracker'
-    MAX_ITER = 40
+    MAX_ITER = 10
     NUM_SYNTHESIS = 500
     DEBUG = True
 
 if __name__ == '__main__':
     # Parameters
     folder_name = 'LinTrack'
-    video_name = 'phone'
+    video_name = 'towel'
     nn_config = NNConfig()
 
     # Experiment
-    cap, ground_truths = read_TMT(folder_name, video_name)
+    cap, ground_truths = read_imgs_folders(ROOT_DIR, folder_name, video_name)
     run_nn_tracker(nn_config, cap, ground_truths)
