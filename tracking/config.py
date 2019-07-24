@@ -18,8 +18,14 @@ class Config(object):
     # Name the configurations
     NAME = None  # Override in sub-classes
 
+    # Patch shape to be used for tracking
+    PATCH_SHAPE = (30, 30)
+
     # Maximum iteration
     MAX_ITER = 1
+
+    # Debugging Flag
+    DEBUG = False
 
     def __init__(self):
         """Set values of computed attributes."""

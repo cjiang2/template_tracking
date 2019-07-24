@@ -5,6 +5,7 @@ Code for visualization.
 
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 def draw_region(img, corners, color=(0, 255, 0), thickness=2):
     """
@@ -23,3 +24,35 @@ def draw_region(img, corners, color=(0, 255, 0), thickness=2):
         p2 = (corners[0, (i + 1) % 4], corners[1, (i + 1) % 4])
         cv2.line(vis, p1, p2, color, thickness)
     return vis
+
+def visualize_iteration(config, 
+                        tracker, 
+                        idx, 
+                        frame_1):
+    """Visualize corners generated during a single tracking
+    iteration path planning in one continuous frame update.
+    NOTE: debug option must be on! 
+    Args:
+        config: configuration class.
+        tracker: any tracker class.
+        idx: frame no index to be visualize.
+        frame_1: next 'idx + 1' consecutive frame.
+    """
+    if config.DEBUG != True:
+        raise Exception('Debug option must be on! ')
+
+    # Get corners and trajectories from the specified idx
+    temp_corners, trajectories = tracker._all_corners[idx], tracker._trajectories[idx]
+    init_corners = tracker._all_corners[idx-1][-1]
+
+    # Visualization
+    vis = draw_region(frame_1, init_corners)
+    for corners in temp_corners:
+        vis = draw_region(vis, corners)
+    
+    # Save the visualization result
+    plt.imshow(vis)
+    plt.show()
+    cv2.imwrite('vis_{}.jpg'.format(idx), vis)
+
+    return
