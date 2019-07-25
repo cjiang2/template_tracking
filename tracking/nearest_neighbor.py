@@ -40,6 +40,9 @@ class NNTracker():
         self.motion_params = motion_params
         self.distance_type = distance_type
 
+        # Flags for tracker status
+        self.initialized = False
+
         # Debugging option
         self.debug = debug
         if self.debug:

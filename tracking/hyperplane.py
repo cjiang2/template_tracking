@@ -44,6 +44,9 @@ class HyperplaneTracker():
         self.max_iter = max_iter
         self.lambd = lambd
 
+        # Flags for tracker status
+        self.initialized = False
+
         # Debugging option
         self.debug = debug
         if self.debug:
