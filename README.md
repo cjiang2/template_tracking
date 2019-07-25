@@ -20,19 +20,31 @@ Some key papers in regards of the implementations:
 - Numpy
 - OpenCV
 - scikit-learn
-- pyflann, [modified version]((https://github.com/nashory/pyflann)) for python3 support
+- pyflann(optional for nntracker), [modified version](https://github.com/nashory/pyflann) for python3 support
 
 ## Demo
 Some demo results for Hyperplane Template Tracker:
+<p align="center">
+  <img src="images/result_book3.gif" width="128" height="128">
+  <img src="images/result_box.gif" width="128" height="128">
+  <img src="images/result_cereal.gif" width="170" height="128">
+  <img src="images/result_towel.gif" width="170" height="128">
+</p>
 
-<center>
-![](images/result_book3.gif)
-![](images/result_box.gif)
-![](images/result_cereal.gif)
-![](images/result_towel.gif)
-</center>
+## Note
+Currently, the Hyperplane tracker works with the following conditions:
+
+ - Textured planar objects.
+ - No strong reflective surface.
+ - No strong illumination changes.
+ - No occlusions.
+ 
+The implementions to improve the tracking robustness is ongoing.
 
 ## TO-DOs
-[] Original Uniform Corner Sampling.
-[] Original region sampling.
-[] Probablistic image difference feature projection.
+[X] Original Uniform Corner Sampling.
+
+[X] Original region sampling.
+
+[X] Probablistic image difference feature projection.
+
