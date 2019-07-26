@@ -75,9 +75,9 @@ class HyperplaneTracker():
             plt.show()
 
         # Start synthesis now
-        self.initialized = self._synthesis()
+        self.initialized = self.synthesis()
 
-    def _synthesis(self):
+    def synthesis(self):
         """Generate synthetic search patches and updates 
         with inverse composition.
         """
@@ -113,9 +113,10 @@ class HyperplaneTracker():
                 # Image Difference
                 deltaI = (search_patch - self.template).reshape(-1)
 
-                H = H.reshape(-1)
+                p = H.reshape(-1)[:-1]
+
                 self.X[i].append(deltaI)
-                self.Y[i].append(H)
+                self.Y[i].append(p)
 
         for i in range(len(self.X)):
             self.X[i], self.Y[i] = np.array(self.X[i]), np.array(self.Y[i])
@@ -165,12 +166,12 @@ class HyperplaneTracker():
             candidates = []
             for learner in self.learners:
                 # Produce updating candidates
-                update_warp = learner.predict(deltaI).squeeze(0)
-                update_warp = update_warp.reshape(3, 3)
+                p = learner.predict(deltaI).squeeze(0)
+                update_warp = utils.make_hom(p)
 
                 # Candidate updated warp
                 candidate_warp = np.matmul(self.warp, update_warp)
-                candidate_warp = utils.normalize_hom(candidate_warp)
+                #candidate_warp = utils.normalize_hom(candidate_warp)
 
                 # Get candidate patch
                 candidate_corners = np.round(utils.apply_homography(candidate_warp, utils._SQUARE)).astype(int)
@@ -189,7 +190,7 @@ class HyperplaneTracker():
 
             # Update
             self.warp = np.matmul(self.warp, update_warp)
-            self.warp = utils.normalize_hom(self.warp)
+            #self.warp = utils.normalize_hom(self.warp)
 
             # Debugging option: store current trajectory and corners
             if self.debug:

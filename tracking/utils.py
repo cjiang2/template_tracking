@@ -14,7 +14,7 @@ def sample_region(img,
                   corners, 
                   region_shape=None,
                   method=0, 
-                  interpolation=cv2.INTER_NEAREST):
+                  interpolation=cv2.INTER_LINEAR):
     """Sample corners region as Bird-eye view patch. Left top point of the 
     rect corners is defined as the origin coordinate (0, 0).
     Args:
@@ -90,8 +90,8 @@ def dehomogenize(corners):
     return results
 
 # ------------------------------------------------------------
-# Functions for homography motion generation and Inverse 
-# Compositional updates
+# Functions for normalized homography motion generation and 
+# Inverse Compositional updates
 # From Martin's NN paper.
 # ------------------------------------------------------------
 
@@ -135,13 +135,11 @@ def apply_homography(homography,
     """Apply homography on point set of shape (2, n).
     """
     (h, w) = pts.shape    
-    result = np.empty((h+1, w))
-    result[:h] = pts
-    result[h].fill(1)
-    result = np.asmatrix(homography) * result
+    pts = homogenize(pts)
+    result = np.matmul(homography, pts)
     result[:h] = result[:h] / result[h]
     result[np.isnan(result)] = 0
-    return np.asarray(result[:h])
+    return result[:h]
 
 def normalize_hom(homography):
     """Normalize homography matrix.
@@ -161,6 +159,38 @@ def random_homography(sigma_t,
     disturbed = np.random.normal(0, sigma_d, (2, 4)) + np.random.normal(0, sigma_t, (2, 1)) + _SQUARE
     H = compute_homography(_SQUARE, disturbed)
     return H
+
+def make_hom(p):
+    """Convert regression result back into a homography.
+    For normalized homography sampling only.
+    """
+    hom = np.identity(3).astype(np.float32)
+    hom[0,0] = p[0];hom[0,1] = p[1];hom[0,2] = p[2]
+    hom[1,0] = p[3];hom[1,1] = p[4];hom[1,2] = p[5]
+    hom[2,0] = p[6];hom[2,1] = p[7]
+    return hom
+
+# ------------------------------------------------------------
+# Functions for unnormalized uniform homography motion generation
+# Described in the original hyperplane tracking paper.
+# ------------------------------------------------------------
+
+def random_uniform_homography(dist_range, 
+                              corners,
+                              inv_warp=True,
+                              method=0):
+    """Generate a random uniform homography motion.
+    """
+    assert dist_range >= 0
+    delta_p = np.random.uniform(low=-dist_range, 
+                                high=dist_range, 
+                                size=(2, 4))
+    disturbed = corners + delta_p
+    if inv_warp:
+        M, _ = cv2.findHomography(disturbed.T, corners.T, method)
+    else:
+        M, _ = cv2.findHomography(corners.T, disturbed.T, method)
+    return M, delta_p
 
 # ------------------------------------------------------------
 # Functions for image operation.

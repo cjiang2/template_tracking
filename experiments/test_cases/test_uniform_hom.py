@@ -10,9 +10,9 @@ ROOT_DIR = os.path.abspath("../../")
 
 # Import tracking utils
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from tracking.utils import sample_region, square_to_corners_warp, random_homography, apply_homography, _SQUARE
+from tracking.utils import sample_region, random_uniform_homography, normalize_minmax, apply_homography
 from tracking.visualize import draw_region
-from datasets.TMT import read_tracking_data
+from datasets.MTF import read_tracking_data
 
 # Test of region sampling
 # ------------------------------
@@ -28,7 +28,7 @@ plt.show()
 # Sample patches, with resizing inwards, using least square
 # Template patch, direct resizing
 patch_1 = sample_region(im1, corners_1, region_shape=(128, 128))
-patch_1 = (patch_1 - np.mean(patch_1))/patch_1.std()
+patch_1 = normalize_minmax(patch_1)
 print('Patch 1')
 print('-'*30)
 print(patch_1, patch_1.dtype)
@@ -37,12 +37,13 @@ print()
 # One synthetic motion
 # ------------------------------
 np.random.seed(0)
-current_warp = square_to_corners_warp(corners_1)
-motion_param = (0.03, 0.02)
-sigma_d, sigma_t = motion_param
-H = random_homography(sigma_d, sigma_t)
-current_warp = np.matmul(current_warp, np.linalg.inv(H))  # Inverse composition
-search_corners = np.round(apply_homography(current_warp, _SQUARE)).astype(int)
+current_warp = np.identity(3)  # Current warp is an identity in this case
+print('Current warp:', current_warp)
+
+# Generate synthetic motion
+H, delta_p = random_uniform_homography(dist_range=3, corners=corners_1)  # NOTE: Inverse H is returned
+current_warp = np.matmul(current_warp, H)  # Inverse composition
+search_corners = np.round(apply_homography(current_warp, corners_1)).astype(int)
 print('original corners:', corners_1)
 print('search corners:', search_corners)
 
