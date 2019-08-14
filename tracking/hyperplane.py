@@ -19,8 +19,9 @@ from tracking import utils
 
 class HyperplaneTracker():
     def __init__(self, 
-                 patch_shape=(30, 30), 
-                 N=5000, 
+                 patch_shape=(100, 100), 
+                 N=1000, 
+                 Np=400,
                  motion_params=[(0.12, 0.08),
                                 (0.09, 0.06),
                                 (0.06, 0.04), 
@@ -40,6 +41,7 @@ class HyperplaneTracker():
         """
         self.patch_shape = patch_shape
         self.N = N
+        self.Np = Np
         self.motion_params = motion_params
         self.max_iter = max_iter
         self.lambd = lambd
@@ -62,14 +64,14 @@ class HyperplaneTracker():
         self.warp = utils.square_to_corners_warp(corners)     # Current warp
 
         # Sample template patch
-        self.template = utils.sample_region(frame, corners, self.patch_shape)
+        self.template = utils.sample_region(frame, corners, self.patch_shape, Np=self.Np)
         self.template = np.float32(self.template)
         self.template = utils.normalize_minmax(self.template)
 
         if self.debug:
             self._trajectories.append([self.warp])   # Store initial warp
             self._all_corners.append([corners])      # Store initial corners
-            template = utils.sample_region(frame, corners, self.patch_shape)    # Visualization test
+            template = utils.sample_region(frame, corners, self.patch_shape, Np=self.Np)    # Visualization test
             plt.imshow(template, cmap='gray')
             plt.title('template')
             plt.show()
@@ -88,10 +90,11 @@ class HyperplaneTracker():
             """Get one synthetic search patch by inputting homography warp parameter.
             """
             disturbed_warp = np.matmul(warp, np.linalg.inv(H))   # Inverse warp
+            disturbed_warp = utils.normalize_hom(disturbed_warp)
 
             # Get search corners and search patch
             search_corners = np.round(utils.apply_homography(disturbed_warp, utils._SQUARE)).astype(int)
-            search_patch = utils.sample_region(frame, search_corners, patch_shape)
+            search_patch = utils.sample_region(frame, search_corners, patch_shape, Np=self.Np)
             return np.float32(search_patch)
 
         print('[Running] Generating synthetic dataset...')
@@ -154,7 +157,7 @@ class HyperplaneTracker():
         for _ in range(self.max_iter):
             # Acquire current patch
             current_corners = np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int)
-            current_patch = utils.sample_region(frame, current_corners, self.patch_shape)
+            current_patch = utils.sample_region(frame, current_corners, self.patch_shape, Np=self.Np)
             current_patch = np.float32(current_patch)
             current_patch = utils.normalize_minmax(current_patch)
 
@@ -171,11 +174,11 @@ class HyperplaneTracker():
 
                 # Candidate updated warp
                 candidate_warp = np.matmul(self.warp, update_warp)
-                #candidate_warp = utils.normalize_hom(candidate_warp)
+                candidate_warp = utils.normalize_hom(candidate_warp)
 
                 # Get candidate patch
                 candidate_corners = np.round(utils.apply_homography(candidate_warp, utils._SQUARE)).astype(int)
-                candidate_patch = utils.sample_region(frame, candidate_corners, self.patch_shape)
+                candidate_patch = utils.sample_region(frame, candidate_corners, self.patch_shape, Np=self.Np)
                 candidate_patch = np.float32(candidate_patch)
                 candidate_patch = utils.normalize_minmax(candidate_patch)
 
@@ -190,7 +193,7 @@ class HyperplaneTracker():
 
             # Update
             self.warp = np.matmul(self.warp, update_warp)
-            #self.warp = utils.normalize_hom(self.warp)
+            self.warp = utils.normalize_hom(self.warp)
 
             # Debugging option: store current trajectory and corners
             if self.debug:
@@ -203,3 +206,6 @@ class HyperplaneTracker():
             self._trajectories.append(temp_trajectories)
 
         return np.round(utils.apply_homography(self.warp, utils._SQUARE)).astype(int)
+
+    def _decision_process(self):
+        return

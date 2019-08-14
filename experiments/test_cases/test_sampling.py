@@ -12,7 +12,7 @@ ROOT_DIR = os.path.abspath("../../")
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from tracking.utils import sample_region
 from tracking.visualize import draw_region
-from datasets.TMT import read_tracking_data
+from datasets.MTF import read_tracking_data
 
 # Test of region sampling
 # ------------------------------
@@ -76,4 +76,10 @@ plt.title('Image Difference(OpenCV)')
 plt.subplot(1,2,2)
 plt.imshow(im_diff_float, cmap='gray')
 plt.title('Image Difference(numpy)')
+plt.show()
+
+# Test Np
+patch_1 = sample_region(im1, corners_1, region_shape=(100, 100), Np=400)
+plt.title('Patch at Frame 1')
+plt.imshow(patch_1, cmap='gray')
 plt.show()

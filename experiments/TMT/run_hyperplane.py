@@ -78,13 +78,13 @@ class HyperplaneConfig(Config):
     """
     NAME = 'HyperplaneTracker'
     MAX_ITER = 10    # Max iteration per H
-    NUM_SYNTHESIS = 5000
-    DEBUG = False
+    NUM_SYNTHESIS = 1000
+    DEBUG = True
 
 if __name__ == '__main__':
     # Parameters
-    folder_name = 'LinTrack'
-    video_name = 'towel'
+    folder_name = 'PAMI'
+    video_name = 'box'
     hyperplane_config = HyperplaneConfig()
 
     # Experiment
