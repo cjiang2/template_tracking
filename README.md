@@ -50,7 +50,5 @@ Some of the to-dos listed here to keep track of implementation progress.
 
  - [ ] Original region sampling using grid points.
 
- - [ ] Probablistic image difference feature projection.
-
  - [ ] Multiple sub-templates tracking.
 
