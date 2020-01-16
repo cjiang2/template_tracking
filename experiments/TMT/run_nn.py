@@ -19,7 +19,7 @@ def alignment_error(corners_pred,
                     corners_true):
     """Calculate Alignment Error (l2) error between corners.
     """
-    return np.sqrt(np.mean(np.sum((corners_pred - corners_true)**2, axis=0)))
+    return np.mean(np.sqrt(np.sum((corners_pred - corners_true)**2, axis=0)))
 
 def run_nn_tracker(config, 
                    cap, 
@@ -83,8 +83,8 @@ class NNConfig(Config):
 
 if __name__ == '__main__':
     # Parameters
-    folder_name = 'LinTrack'
-    video_name = 'towel'
+    folder_name = 'TMT'
+    video_name = 'nl_cereal_s3'
     nn_config = NNConfig()
 
     # Experiment

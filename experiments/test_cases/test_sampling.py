@@ -25,14 +25,6 @@ corners_2 = ground_truths[1]
 vis1 = draw_region(im1, corners_1)
 vis2 = draw_region(im2, corners_2)
 
-plt.imshow(vis1)
-plt.title('Frame 1')
-plt.show()
-
-plt.imshow(vis2)
-plt.title('Frame 2')
-plt.show()
-
 # Sample patches, with resizing inwards, using least square
 # Template patch, direct resizing
 patch_1 = sample_region(im1, corners_1, region_shape=(128, 128))
@@ -50,6 +42,23 @@ print('-'*30)
 print(patch_2, patch_2.dtype)
 print()
 
+plt.subplot(2,2,1)
+plt.imshow(vis1)
+plt.title('Frame 1')
+
+plt.subplot(2,2,2)
+plt.title('Patch at Frame 1')
+plt.imshow(patch_1, cmap='gray')
+
+plt.subplot(2,2,3)
+plt.imshow(vis2)
+plt.title('Frame 2')
+
+plt.subplot(2,2,4)
+plt.title('Patch at Frame 2')
+plt.imshow(patch_2, cmap='gray')
+plt.show()
+
 # Image difference
 im_diff = cv2.subtract(patch_1, patch_2)
 im_diff_float = np.float32(patch_1) - np.float32(patch_2)
@@ -60,15 +69,6 @@ print()
 
 print('numpy(float) Image Difference\nMax. Pixel Value: {}, Min Pixel Value: {}'.format(np.max(im_diff_float), np.min(im_diff_float)))
 print('2-norm:', np.linalg.norm(im_diff_float))
-
-# Show a bunch of pics
-plt.subplot(1,2,1)
-plt.title('Patch at Frame 1')
-plt.imshow(patch_1, cmap='gray')
-plt.subplot(1,2,2)
-plt.title('Patch at Frame 2')
-plt.imshow(patch_2, cmap='gray')
-plt.show()
 
 plt.subplot(1,2,1)
 plt.imshow(im_diff, cmap='gray')
