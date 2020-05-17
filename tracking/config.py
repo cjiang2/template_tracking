@@ -1,5 +1,5 @@
 """
-Tracking Python
+Template Tracking Python
 Base Configurations class.
 
 # References:
@@ -18,13 +18,27 @@ class Config(object):
     # Name the configurations
     NAME = None  # Override in sub-classes
 
-    # Patch shape to be used for tracking
-    PATCH_SHAPE = (30, 30)
+    # Shape of bird-eye view patch
+    REGION_SHAPE = (100, 100)
 
-    # Maximum iteration
-    MAX_ITER = 1
+    # Levels of sub-templates
+    L = 3
+    
+    # Number of sample points
+    Np = 100
 
-    # Debugging Flag
+    # Maximum search iteration for update
+    MAX_ITER = 10
+    
+    # No. synthetic samples to be generated for each motion param
+    NUM_SYNTHESIS = 500
+
+    # sigma_d and sigma_t for motion generation
+    MOTION_PARAMS = [(0.015, 0.01), 
+                     (0.03, 0.02), 
+                     (0.06, 0.04)]
+
+    # Flag for debugging mode
     DEBUG = False
 
     def __init__(self):

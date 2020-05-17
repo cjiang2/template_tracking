@@ -8,8 +8,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 def draw_region(img, corners, color=(0, 255, 0), thickness=2):
-    """
-    Draw the bounding box specified by the given corners
+    """Draw the bounding box specified by the given corners
     of shape (2, 4).
     corners: [(x1, y1), (x2, y2), (x3, y3), (x4, y4)] four rectangle 
              corner coordinates.

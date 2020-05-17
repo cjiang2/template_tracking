@@ -1,0 +1,84 @@
+"""
+Template Tracking Python
+Run experiment with the hyperplane tracker.
+"""
+
+import os
+import sys
+
+import cv2
+import numpy as np
+
+# Root directory of the project
+ROOT_DIR = os.path.abspath("../../")
+
+# Import tracking utils
+sys.path.append(ROOT_DIR)  # To find local version of the library
+from tracking import utils
+from tracking.hyperplane import HyperplaneTracker
+from tracking import visualize
+from experiments.PTW import PTW
+
+VIDEO_NAME = 'Coke_1'
+
+def alignment_error(corners_pred, 
+                    corners_true):
+    """Calculate Alignment Error (l2) error between corners.
+    """
+    return np.mean(np.sqrt(np.sum((corners_pred - corners_true)**2, axis=0)))
+
+def run_hyperplane_tracker(config, 
+                           cap, 
+                           gt):
+    """Helper function to run hyperplane tracker.
+    """
+    # Prepare 1st frame
+    ret, frame0_rgb = cap.read()
+    frame0 = cv2.cvtColor(frame0_rgb, cv2.COLOR_BGR2GRAY)
+    corners0 = gt[0,:]
+
+    # Initialize hyperplane tracker
+    tracker = HyperplaneTracker(config)
+    tracker.initialize(frame0, corners0)
+
+    # Visualization
+    window_name = 'Tracking Result'
+    cv2.namedWindow(window_name)
+    errors = []
+
+    # Track
+    for i in range(1, gt.shape[0]):
+        ret, frame = cap.read()
+        if not ret:
+            print('Frame ", i, " could not be read')
+            break
+        
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        corners = tracker.update(frame_gray)
+        err = alignment_error(corners, gt[i,:])
+        errors.append(err)
+        print('Frame id: {}, Mean Corners Error: {}\nCorners: {}'.format(i, err, corners))
+
+        # Drawings and visualization here
+        frame = visualize.draw_region(frame, gt[i,:])
+        frame = visualize.draw_region(frame, corners, color=(0, 0, 255))
+        cv2.imshow(window_name, frame)
+
+        if cv2.waitKey(20) & 0xFF == ord('q'):
+            break
+
+    print('\nSummary')
+    print('-'*20)
+    print('Average Mean Corners Error: {}'.format(sum(errors)/len(errors)))
+
+    return
+
+if __name__ == '__main__':
+    # Configuration
+    config = PTW.PTWConfig()
+    
+    # Load the video to experiment on
+    cap, gt = PTW.load_video_by_name(VIDEO_NAME)
+    
+    # Run tracker now
+    run_hyperplane_tracker(config, cap, gt)
