@@ -86,18 +86,23 @@ class HyperplaneTracker():
                 disturbed_warp = utils.normalize_hom(disturbed_warp)
 
                 # Grab the disturbed region and corners
-                disturbed_corners = np.round(utils.apply_to_pts(disturbed_warp, utils._SQUARE)).astype(int)
-                disturbed_template = utils.sample_region(self.frame, 
-                                                         disturbed_corners,
-                                                         region_shape=self.config.REGION_SHAPE,
-                                                         Np=self.config.Np)
-                disturbed_template = utils.normalize_minmax(np.float32(disturbed_template))
+                disturbed_template = self._get_region(self.frame, disturbed_warp)
                 patches[i,:,:] = disturbed_template
 
             # Prepare synthetic samples for learning
             X = (patches - np.expand_dims(self.template, axis=0)).reshape(-1, self.config.Np)
             self.X.append(X)
             self.Y.append(warps.reshape(-1, 9)[:,:-1])
+
+            # DEBUG: Visualize the randomly generated patch
+            if self.config.DEBUG:
+                plt.subplot(1,2,1)
+                plt.imshow(self.template)
+                plt.title('Original Template')
+                plt.subplot(1,2,2)       
+                plt.imshow(disturbed_template)
+                plt.title('Disturbed with Param: {}'.format(motion_param))
+                plt.show()
         
         print('Synthesis done.')
 
@@ -117,30 +122,34 @@ class HyperplaneTracker():
         print('Training done')
         return
 
-    def update(self, 
-               frame):
-        """Produce updated tracked region.
+    def _get_region(self, 
+                    frame,
+                    warp):
+        """Wrapper to acquire a region given a warp.
         """
-        if not self.initialized:
-            raise Exception('Tracker uninitialized!')
-        
+        corners = np.round(utils.apply_to_pts(warp, utils._SQUARE)).astype(int)
+        patch = utils.sample_region(frame, 
+                                    corners,
+                                    region_shape=self.config.REGION_SHAPE,
+                                    Np=self.config.Np)
+        patch = utils.normalize_minmax(np.float32(patch))
+        return patch
+
+    def _greedy_search(self, 
+                       frame):
+        """Greedy search method.
+        """
         for _ in range(self.config.MAX_ITER):
+            scores = []
+            candidates = []
+
             # Acquire current patch
-            curr_corners = np.round(utils.apply_to_pts(self.warp, utils._SQUARE)).astype(int)
-            curr_patch = utils.sample_region(frame, 
-                                             curr_corners,
-                                             region_shape=self.config.REGION_SHAPE,
-                                             Np=self.config.Np)
-            curr_patch = utils.normalize_minmax(np.float32(curr_patch))
+            curr_patch = self._get_region(frame, self.warp)
 
             # Linear Rregression
             deltaI = np.expand_dims((curr_patch - self.template).reshape(-1), axis=0)
-
-            # Greedy search, use the update with the maximum similarity score
-            scores = []
-            candidates = []
             for learner in self.learners:
-                # Produce updating candidates
+                # Produce p to update current warp
                 p = learner.predict(deltaI).squeeze(0)
                 update_warp = utils.make_hom(p)
 
@@ -149,15 +158,10 @@ class HyperplaneTracker():
                 candidate_warp = utils.normalize_hom(candidate_warp)
 
                 # Get candidate patch
-                candidate_corners = np.round(utils.apply_to_pts(candidate_warp, utils._SQUARE)).astype(int)
-                candidate_patch = utils.sample_region(frame, 
-                                                      candidate_corners, 
-                                                      region_shape=self.config.REGION_SHAPE,
-                                                      Np=self.config.Np)
-                candidate_patch = utils.normalize_minmax(np.float32(candidate_patch))
+                candidate_patch = self._get_region(frame, candidate_warp)
 
                 # Image similarity score
-                score = np.sum(np.square(candidate_patch - self.template))
+                score = utils.SSD(candidate_patch, self.template)
                 scores.append(score)
                 candidates.append(update_warp)
 
@@ -168,5 +172,25 @@ class HyperplaneTracker():
             # Update
             self.warp = np.matmul(self.warp, update_warp)
             self.warp = utils.normalize_hom(self.warp)
+
+        return
+
+    def _beam_search(self, 
+                     frame):
+        """Beam search among iterations.
+        """
+        return
+
+    def update(self, 
+               frame):
+        """Produce updated tracked region.
+        """
+        if not self.initialized:
+            raise Exception('Tracker uninitialized!')
+        
+        if self.config.SEARCH_MODE == 'beam':
+            self._beam_search(frame)
+        else:
+            self._greedy_search(frame)
 
         return np.round(utils.apply_to_pts(self.warp, utils._SQUARE)).astype(int)

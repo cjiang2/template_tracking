@@ -119,28 +119,39 @@ def polys_to_mask(img,
     cv2.fillPoly(mask, [polys], 255)
     return mask
 
+
+# ------------------------------
+# Functions for Sppearance Model
+# ------------------------------
+
+def SSD(im1, 
+        im2):
+    """Sum-of-square distance.
+    """
+    return np.sum(np.square(im1 - im2))
+
 # ------------------------------
 # Functions for SSM
 # ------------------------------
-# Inverse compositional updates from Martin's NN paper
-_SQUARE = np.array([[0.0, 0.0],[1.0, 0.0],[1.0, 1.0],[0.0, 1.0]]).T
-_SQUARE_AFF = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
 
-def apply_to_pts(hom, 
+def apply_to_pts(T, 
                  pts):
-    """Apply a homography matrix on point set of shape (2, n).
+    """Apply a geometric transformation on point set of shape (2, n).
     """
     (h, w) = pts.shape    
     pts = homogenize(pts)
-    result = np.matmul(hom, pts)
+    result = np.matmul(T, pts)
     result[:h] = result[:h] / result[-1]
     result[np.isnan(result)] = 0
     return result[:h]
 
-def normalize_hom(hom):
-    """Normalize a homography matrix.
+def square_to_corners_warp(corners, 
+                           method=0):
+    """Computes the homography from the centered unit square to
+       the quadrilateral defined by the corners.
     """
-    return hom / hom[2, 2]
+    H, _ = cv2.findHomography(_SQUARE.T, np.float32(corners.T), method)
+    return H
 
 '''
 _SQUARE = np.array([[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]]).T
@@ -193,13 +204,16 @@ def random_hom(sigma_t,
     return H
 '''
 
-def square_to_corners_warp(corners, 
-                           method=0):
-    """Computes the homography from the centered unit square to
-       the quadrilateral defined by the corners.
+# ------------------------------
+# SSM: Corners-based Homography
+# Inverse compositional updates from Martin's NN paper
+# ------------------------------
+_SQUARE = np.array([[0.0, 0.0],[1.0, 0.0],[1.0, 1.0],[0.0, 1.0]]).T
+
+def normalize_hom(hom):
+    """Normalize a homography matrix.
     """
-    H, _ = cv2.findHomography(_SQUARE.T, np.float32(corners.T), method)
-    return H
+    return hom / hom[2, 2]
 
 def random_hom(sigma_t, 
                sigma_d,
@@ -227,3 +241,16 @@ def make_hom_sl3(p):
     hom[1,0] = p[3];hom[1,1] = p[4] - p[0];hom[1,2] = p[5]
     hom[2,0] = p[6];hom[2,1] = p[7];hom[2,2] = -p[4]
     return expm(hom)
+
+# ------------------------------
+# SSM: Affine
+# ------------------------------
+_SQUARE_AFF = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=np.float32).T
+
+def random_affine(sigma_t, 
+                  sigma_d):
+    """Generate a random affine motion.
+    """
+    disturbed = np.float32(np.random.normal(0, sigma_d, (2, 3)) + np.random.normal(0, sigma_t, (2, 1)) + _SQUARE_AFF)
+    H = cv2.getAffineTransform(_SQUARE_AFF.T, disturbed.T)
+    return H

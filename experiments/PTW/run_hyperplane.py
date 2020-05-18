@@ -19,7 +19,7 @@ from tracking.hyperplane import HyperplaneTracker
 from tracking import visualize
 from experiments.PTW import PTW
 
-VIDEO_NAME = 'Coke_1'
+VIDEO_NAME = 'Coke_2'
 
 def alignment_error(corners_pred, 
                     corners_true):

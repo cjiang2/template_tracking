@@ -29,6 +29,12 @@ class Config(object):
 
     # Maximum search iteration for update
     MAX_ITER = 10
+
+    # Search mode, whether to use greedy search or Beam Search in search iteration
+    SEARCH_MODE = 'greedy'
+
+    # Beam search size
+    BEAM_SIZE = 3
     
     # No. synthetic samples to be generated for each motion param
     NUM_SYNTHESIS = 500
