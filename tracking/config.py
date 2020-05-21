@@ -20,11 +20,8 @@ class Config(object):
 
     # Shape of bird-eye view patch
     REGION_SHAPE = (100, 100)
-
-    # Levels of sub-templates
-    L = 3
     
-    # Number of sample points
+    # Number of sample points, corresponding to levels of sub-templates
     Np = 100
 
     # Maximum search iteration for update
@@ -45,7 +42,7 @@ class Config(object):
                      (0.06, 0.04)]
 
     # Flag for debugging mode
-    DEBUG = False
+    DEBUG = True
 
     def __init__(self):
         """Set values of computed attributes."""

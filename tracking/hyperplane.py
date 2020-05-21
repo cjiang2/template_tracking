@@ -16,6 +16,7 @@ import cv2
 import matplotlib.pyplot as plt
 from sklearn import linear_model
 from tracking import utils
+from tracking import visualize
 
 class HyperplaneTracker():
     """Main class for hyperplane tracker.
@@ -36,7 +37,7 @@ class HyperplaneTracker():
         """
         self.frame = frame
         self.warp = utils.square_to_corners_warp(corners)     # Current warp
-        # Sample template patch
+        # Sample full template patch
         self.template = utils.sample_region(frame, 
                                             corners, 
                                             region_shape=self.config.REGION_SHAPE,
@@ -85,7 +86,7 @@ class HyperplaneTracker():
                 disturbed_warp = np.matmul(self.warp, np.linalg.inv(H))     # Inverse warp
                 disturbed_warp = utils.normalize_hom(disturbed_warp)
 
-                # Grab the disturbed region and corners
+                # Grab the disturbed template
                 disturbed_template = self._get_region(self.frame, disturbed_warp)
                 patches[i,:,:] = disturbed_template
 
@@ -97,10 +98,10 @@ class HyperplaneTracker():
             # DEBUG: Visualize the randomly generated patch
             if self.config.DEBUG:
                 plt.subplot(1,2,1)
-                plt.imshow(self.template)
+                plt.imshow(self.template, cmap='gray')
                 plt.title('Original Template')
                 plt.subplot(1,2,2)       
-                plt.imshow(disturbed_template)
+                plt.imshow(disturbed_template, cmap='gray')
                 plt.title('Disturbed with Param: {}'.format(motion_param))
                 plt.show()
         
@@ -112,14 +113,16 @@ class HyperplaneTracker():
         return True
 
     def _train(self):
-        """Linear regression. 
+        """Ridge linear regression. 
+        Construct individual learners for:
+            - Small to large motion distributions.
         """
         self.learners = []
         # Calculate weight matrix per motion param
-        for i in range(len(self.config.MOTION_PARAMS)):
+        for i in range(len(self.X)):
             learner = linear_model.Ridge(alpha=self.config.LAMBD).fit(self.X[i], self.Y[i])
             self.learners.append(learner)
-        print('Training done')
+        print('Training done.')
         return
 
     def _get_region(self, 
@@ -139,14 +142,13 @@ class HyperplaneTracker():
                        frame):
         """Greedy search method.
         """
+        trajectory = []
         for _ in range(self.config.MAX_ITER):
             scores = []
             candidates = []
 
             # Acquire current patch
             curr_patch = self._get_region(frame, self.warp)
-
-            # Linear Rregression
             deltaI = np.expand_dims((curr_patch - self.template).reshape(-1), axis=0)
             for learner in self.learners:
                 # Produce p to update current warp
@@ -165,21 +167,23 @@ class HyperplaneTracker():
                 scores.append(score)
                 candidates.append(update_warp)
 
-            # Get minimum score
-            idx = scores.index(min(scores))
+            # Get minimum score among updates produced by all learners
+            idx = np.argmin(scores)
             update_warp = candidates[idx]
 
-            # Update
+            # Greedy update
             self.warp = np.matmul(self.warp, update_warp)
             self.warp = utils.normalize_hom(self.warp)
+            trajectory.append(self.warp)
 
-        return
+        return trajectory
 
     def _beam_search(self, 
                      frame):
         """Beam search among iterations.
         """
-        return
+        trajectories = []
+        return None, trajectories
 
     def update(self, 
                frame):
@@ -189,8 +193,23 @@ class HyperplaneTracker():
             raise Exception('Tracker uninitialized!')
         
         if self.config.SEARCH_MODE == 'beam':
-            self._beam_search(frame)
+            trajectory, _ = self._beam_search(frame)
         else:
-            self._greedy_search(frame)
+            trajectory = self._greedy_search(frame)
+
+        if self.config.DEBUG and trajectory is not None:
+            # Visualize trajectory used for update
+            all_corners = [np.round(utils.apply_to_pts(warp, utils._SQUARE)).astype(int) for warp in trajectory]
+            vis = frame.copy()
+            for corners in all_corners:
+                vis = visualize.draw_region(vis, corners, color=(0, 0, 255))
+            plt.imshow(vis)
+            plt.title('Updating Trajectory')
+            plt.pause(0.001)
+            plt.clf()
+
+            # Store trajectory and corners at this stage of updates
+            self._trajectories.append(trajectory)
+            self._all_corners.append(all_corners)
 
         return np.round(utils.apply_to_pts(self.warp, utils._SQUARE)).astype(int)

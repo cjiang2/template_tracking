@@ -64,15 +64,28 @@ def sample_region(img,
     
     # Perform grid sampling if specified
     if Np is not None:
-        assert width == height  # Ensure it's a rectangle patch for now
-        # Generate mesh grid
-        grid_size = int(np.round(np.sqrt(Np)))
-        x = np.linspace(0, width - 1, num=grid_size, dtype=int)
-        y = np.linspace(0, height - 1, num=grid_size, dtype=int)
-        xv, yv = np.meshgrid(x, y, sparse=False)
-        # Subsample region
-        region = region[yv, xv]
+        region = grid_sample(region, Np)
 
+    return region
+
+def grid_sample(region, 
+                Np):
+    """Perform grid sampling.
+    Args:
+        region: image region to be sampled.
+        Np: no. feature points to be sampled inside the region.
+    """
+    height, width = region.shape[:2]
+    assert width == height  # Ensure it's a rectangle patch for now
+
+    # Generate mesh grid
+    grid_size = int(np.round(np.sqrt(Np)))
+    x = np.linspace(0, width - 1, num=grid_size, dtype=int)
+    y = np.linspace(0, height - 1, num=grid_size, dtype=int)
+    xv, yv = np.meshgrid(x, y, sparse=False)
+
+    # Subsample region
+    region = region[yv, xv]
     return region
 
 def normalize_zscore(intensity):
@@ -86,6 +99,27 @@ def normalize_minmax(intensity):
     """
     intensity = (intensity - np.min(intensity)) / (np.max(intensity) - np.min(intensity))
     return intensity
+
+def divide_image(img, 
+                 l):
+    """Divide one full image into several sub parts.
+    Args:
+        l: Sub-template level. Generate 4^l sub parts. 
+    """
+    height, width = img.shape[:2]
+    assert width == height  # Ensure it's a rectangle img for now
+
+    num_division = int(np.sqrt(4**l))
+    sub_imgs = []
+
+    # Crop from full image to sub images
+    sub_height, sub_width =  int(height // num_division), int(width // num_division)
+    for j in range(0, height, height // num_division):
+        for i in range(0, width, width // num_division):
+            sub_img = img[j:j+sub_height, i:i+sub_width]
+            sub_imgs.append(sub_img)
+
+    return sub_imgs
 
 
 # ------------------------------
