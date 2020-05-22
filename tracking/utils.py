@@ -88,16 +88,18 @@ def grid_sample(region,
     region = region[yv, xv]
     return region
 
-def normalize_zscore(intensity):
+def normalize_zscore(intensity, 
+                     eps=1e-12):
     """zero mean, unit variance image normalization.
     """
-    intensity = (intensity - np.mean(intensity)) / np.std(intensity, ddof=1)
+    intensity = (intensity - np.mean(intensity)) / (np.std(intensity, ddof=1) + eps)
     return intensity
 
-def normalize_minmax(intensity):
+def normalize_minmax(intensity, 
+                     eps=1e-12):
     """Min-max image normalization.
     """
-    intensity = (intensity - np.min(intensity)) / (np.max(intensity) - np.min(intensity))
+    intensity = (intensity - np.min(intensity)) / (np.max(intensity) - np.min(intensity) + eps)
     return intensity
 
 def divide_image(img, 
@@ -162,7 +164,7 @@ def SSD(im1,
         im2):
     """Sum-of-square distance.
     """
-    return np.sum(np.square(im1 - im2))
+    return np.absolute(np.sum(np.square(im1 - im2)))
 
 # ------------------------------
 # Functions for SSM

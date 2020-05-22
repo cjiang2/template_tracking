@@ -71,6 +71,15 @@ def run_hyperplane_tracker(config,
     print('-'*20)
     print('Average Mean Corners Error: {}'.format(sum(errors)/len(errors)))
 
+    if config.DEBUG:
+        # Print out some trajectories
+        print('No. trajectories recorded: {}'.format(len(tracker._trajectories)))
+        traj_0 = tracker._trajectories[0]
+        print(traj_0.warps, traj_0.score)
+
+        traj_rand = tracker._trajectories[12]
+        print(len(traj_rand.warps), traj_rand.score)
+
     return
 
 if __name__ == '__main__':

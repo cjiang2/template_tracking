@@ -28,7 +28,7 @@ class Config(object):
     MAX_ITER = 10
 
     # Search mode, whether to use greedy search or Beam Search in search iteration
-    SEARCH_MODE = 'greedy'
+    SEARCH_MODE = 'beam'
 
     # Beam search size
     BEAM_SIZE = 3
@@ -42,7 +42,7 @@ class Config(object):
                      (0.06, 0.04)]
 
     # Flag for debugging mode
-    DEBUG = True
+    DEBUG = False
 
     def __init__(self):
         """Set values of computed attributes."""
