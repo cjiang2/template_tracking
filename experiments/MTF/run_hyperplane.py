@@ -17,7 +17,7 @@ sys.path.append(ROOT_DIR)  # To find local version of the library
 from tracking import utils
 from tracking.hyperplane import HyperplaneTracker
 from tracking import visualize
-from experiments.PTW import PTW
+from experiments.MTF import MTF
 
 VIDEO_NAME = 'Coke_2'
 
@@ -84,10 +84,10 @@ def run_hyperplane_tracker(config,
 
 if __name__ == '__main__':
     # Configuration
-    config = PTW.PTWConfig()
+    config = MTF.MTFConfig()
     
     # Load the video to experiment on
-    cap, gt = PTW.load_video_by_name(VIDEO_NAME)
+    cap, gt = MTF.load_video_by_name(VIDEO_NAME)
     
     # Run tracker now
     run_hyperplane_tracker(config, cap, gt)

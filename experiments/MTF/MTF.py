@@ -1,9 +1,6 @@
 """
 Template Tracking Python
-Codes to interact with PTW dataset.
-
-# To acquire PTW dataset, check:
-http://www.dabi.temple.edu/~hbling/data/POT-210/planar_benchmark.html
+Codes to interact with MTF format dataset.
 
 # To download template tracking datasets in MTF formats, check:
 http://webdocs.cs.ualberta.ca/~vis/mtf/index.html
@@ -26,18 +23,18 @@ from tracking.config import Config
 # Configuration
 # ------------------------------
 
-class PTWConfig(Config):
-    """Configuration for inferencing on PTW dataset.
+class MTFConfig(Config):
+    """Configuration for inferencing on MTF dataset.
     """
     # Give the configuration a recognizable name
-    NAME = "PTW"
+    NAME = "MTF"
     LAMBD = 0.1
 
 # ------------------------------
 # Functions to Process Data in MTF Format
 # ------------------------------
 
-def read_annotation_mtf(filename):
+def read_annotation(filename):
     """Read ground truth data in MTF format.
     """
     if not os.path.isfile(filename):
@@ -71,5 +68,5 @@ def load_video_by_name(video_name,
     """Helper function to read video file and the associated annotation.
     """
     cap = _load_video(os.path.join('data', video_name + video_ftype))
-    gt = read_annotation_mtf(os.path.join('data', video_name + '.txt'))
+    gt = read_annotation(os.path.join('data', video_name + '.txt'))
     return cap, gt
