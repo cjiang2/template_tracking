@@ -62,11 +62,28 @@ def _load_video(fpath):
     if not cap.open(fpath):
         raise Exception('The video file ', src_fname, ' could not be opened')
     return cap
+
+def _load_images(fpath, 
+                 fname='frame%05d.jpg'):
+    src_fname = os.path.join(fpath, fname)
+    cap = cv2.VideoCapture()
+    if not cap.open(src_fname):
+        raise Exception('The video file ', src_fname, ' could not be opened')
+    return cap
     
-def load_video_by_name(video_name, 
+def load_video_by_name(dataset_name,
+                       video_name, 
                        video_ftype='.avi'):
     """Helper function to read video file and the associated annotation.
     """
-    cap = _load_video(os.path.join('data', video_name + video_ftype))
-    gt = read_annotation(os.path.join('data', video_name + '.txt'))
+    cap = _load_video(os.path.join('data', dataset_name, video_name + video_ftype))
+    gt = read_annotation(os.path.join('data', dataset_name, video_name + '.txt'))
+    return cap, gt
+
+def load_video_by_folder(dataset_name, 
+                         video_name):
+    """Read tracking dataset stored as sequences of images.
+    """
+    cap = _load_images(os.path.join('data', dataset_name, video_name))
+    gt = read_annotation(os.path.join('data', dataset_name, video_name + '.txt'))
     return cap, gt

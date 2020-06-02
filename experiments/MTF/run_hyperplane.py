@@ -19,7 +19,10 @@ from tracking.hyperplane import HyperplaneTracker
 from tracking import visualize
 from experiments.MTF import MTF
 
+# Some flags, to be moved into config class
+DATASET_NAME = 'PTW'
 VIDEO_NAME = 'Coke_2'
+READ_FOLDER = False
 
 def alignment_error(corners_pred, 
                     corners_true):
@@ -87,7 +90,10 @@ if __name__ == '__main__':
     config = MTF.MTFConfig()
     
     # Load the video to experiment on
-    cap, gt = MTF.load_video_by_name(VIDEO_NAME)
+    if READ_FOLDER:
+        cap, gt = MTF.load_video_by_folder(DATASET_NAME, VIDEO_NAME)
+    else:
+        cap, gt = MTF.load_video_by_name(DATASET_NAME, VIDEO_NAME)
     
     # Run tracker now
     run_hyperplane_tracker(config, cap, gt)
